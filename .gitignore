@@ -1,0 +1,8 @@
+*/campusnet/*
+*.swp
+*.swo
+*.pyc
+f12env/*
+doc/*
+*.log
+*.aux
