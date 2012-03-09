@@ -35,7 +35,6 @@ pois.HMM.moments = function (m, lambda, gamma, lag.max=10) {
     correlations = matrix(c(1, rep(0, lag.max)), nrow=1)
     tmp.gamma = gamma
     for (i in 2:(lag.max+1)) {
-        print(i)
         cov = delta %*% Lambda %*% tmp.gamma %*% t(lambda) - expectation.sq
         correlations[i] = cov/variance
         tmp.gamma = tmp.gamma %*% gamma

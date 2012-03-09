@@ -1,0 +1,275 @@
+\def\assignmenttitle{Written exercise 1}
+\def\assignmentnumber{1}
+\def\assignmentdate{10-03-2012}
+\def\githuburl{\small\url{https://github.com/alphabits/dtu-spring-2012/tree/master/02433/assignment-1}}
+\def\githuburlfoot{\footnotesize\url{https://github.com/alphabits/dtu-spring-2012/tree/master/02433/assignment-1}}
+
+\input{../../header}
+
+%%% BEGIN DOCUMENT
+\begin{document}
+
+\maketitle
+
+In this assignment a data set with sales figures for a soap product is analysed. The data set contains sales counts for a soap product for 242 consecutive weeks.
+
+\section*{Question a: Choosing a model} % (fold)
+\label{sec:qa}
+
+To start the analysis of the soap sales series, a plot of the data set is created and is shown in figure~\ref{fig:sales-series}.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=140mm]{\plotpath{sales-series.pdf}}
+\caption{Weekly sales of a soap product in a supermarket for 242 consecutive weeks}
+\label{fig:sales-series}
+\end{figure}
+
+From the plot it is seen that some distinct periods can be found in the data set. E.g. from week 25 to week 100 both the mean and variance seems to be smaller than for the whole data set. This could be a sign that a simple Poisson model isn't adequate to describe the data. Also the mean and variance for the whole data set is calculated, and gives
+
+\begin{equation*}
+    \bar{x} = 5.44 \quad\quad s^2 = 15.40
+\end{equation*}
+
+Since the mean equals the variance in the Poisson distribution, the data is overdispersed relative to the Poisson distribution and this further shows that a simple Poisson model will not fit the data.
+
+One way to model data that is overdispersed relative to the simple Poisson model, is to use a independent mixture of Poisson distributions, but plotting the ACF (see figure \ref{fig:acf-data}) of the data, shows that consecutive data points are positive correlated. By definition, this isn't true for an independent mixture of Poisson distributions and therefore this type of model isn't considered further.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=80mm]{\plotpath{acf-data.pdf}}
+\caption{ACF plot of the soap data set}
+\label{fig:acf-data}
+\end{figure}
+
+To handle both the overdispersed data and the correlation in the data a Poisson-HMM is instead fitted to the data.
+
+
+\section*{Question b: Fitting Poisson-HMMs by direct maximization of the likelihood} % (fold)
+\label{sec:qb}
+
+In this section a 2-, 3-, and 4-state Poisson-HMM is fitted to the soap data set, by maximizing the likelihood function. A couple of details need to be handle to get a usable fit. The number of operations needed to calculate the likelihood needs to be held low. This is done by recursively calculating the forward probabilities. Also to avoid underflow problems the forward probablities need to be scaled. And to be able to use an unconstrained optimization algorithm the parameters (the Poisson means and the transition probabilities) needs to be transformed to some unconstrained working parameters. All these concerns are handled by the R-function \myverb{pois.HMM.mle} in appendix A.1.4 in \citep{zucchini09} and therefore that function is used.
+
+\subsection*{Fitting a 2-state Poisson-HMM}
+
+To fit the model initial values for the parameters should be chosen. Using the advice in section 3.4.2 in \citep{zucchini09} a single value is chosen for the off-diagonal elements in the initial t.p.m. The initial mean values are chosen symmetrically around the sample mean. As mentioned in section 3.4.1 in \citep{zucchini09} the likelihood function will frequently have multiple local maxima so different initial values\footnote{See \appref{2-state-ml-results} for the specific initial values tested} need to be tested to minimize the chance of choosing a local maxima that is far from the global maxima.
+
+For the 2-state Poisson-HMM the different initial parameters all gave the same maxima and it is therefore likely that it is indeed the global maxima. Using the initial parameters
+
+\begin{equation*}
+    \myvec{\Gamma}_0 = \begin{pmatrix}
+        0.9 & 0.1 \\
+        0.1 & 0.9
+    \end{pmatrix} \quad\quad \myvec{\lambda}_0 = \begin{pmatrix}
+        2 & 8
+    \end{pmatrix}
+\end{equation*}
+
+\noindent gave the following parameter estimates
+
+\begin{equation*}
+    \myvec{\Gamma} = \input{\respath{2-state-ml-gamma.tex}} \quad\quad
+    \myvec{\lambda} = \input{\respath{2-state-ml-lambda.tex}} 
+\end{equation*}
+
+\noindent From the estimate $\myvec{\Gamma}$ the stationary distribution can then be calculated as 
+
+\begin{equation*}
+    \myvec{\delta} = \input{\respath{2-state-ml-delta.tex}}
+\end{equation*}
+
+A plot of the marginal distribution of the 2-state Poisson model and a plot of the two estimated means are shown in figure~\ref{fig:2-state-ml}
+
+\begin{figure}[ht]
+    \centering
+    \mbox{\subfigure{\includegraphics[width=70mm]{\plotpath{2-state-ml-histogram.pdf}}} \quad \subfigure{\includegraphics[width=70mm]{\plotpath{2-state-ml-means-on-data.pdf}}}}
+    \caption{Left plot is a plot of the marginal distribution of the 2-state Poisson-HMM above the histogram for the soap data set. Right plot is the soap data set with the estimated means of the two state conditional distributions of the 2-state Poisson-HMM.}
+    \label{fig:2-state-ml}
+\end{figure}
+
+It is seen that the marginal distribution is matching the sample distribution rather well, and from the data plot with means included it is seen that state 1 corresponds to the ``normal'' sales level and that state 2 corresponds to the weeks with very high sale figures.
+
+
+\subsection*{Fitting a 3-state Poisson-HMM}
+
+As with the 2-state Poisson-HMM different initial parameters\footnote{See \appref{3-state-ml-results} for the initial values that was tested} was used to fit a 3-state Poisson-HMM to the soap data set. Two different local maximas was found depending on the initial values of the $\myvec{\lambda}$ parameter. For the lowest of the two maxima one of the state dependent means was close to 0 which gives a model that is almost a 2-state HMM. For the other maxima all state dependent means were different from zero, and this maxima was found by eg. using the intial parameters
+
+\begin{equation*}
+    \myvec{\Gamma}_0 = \begin{pmatrix}
+        0.8 & 0.1 & 0.1 \\
+        0.1 & 0.8 & 0.1 \\
+        0.1 & 0.1 & 0.8
+    \end{pmatrix} \quad\quad \myvec{\lambda}_0 = \begin{pmatrix}
+        2 & 5 & 8
+    \end{pmatrix}
+\end{equation*}
+
+\noindent Which gave the estimates
+
+\begin{equation*}
+    \myvec{\Gamma} = \input{\respath{3-state-ml-gamma.tex}} \quad\quad
+    \myvec{\lambda} = \input{\respath{3-state-ml-lambda.tex}} 
+\end{equation*}
+
+\noindent and the stationary distribution
+
+\begin{equation*}
+    \myvec{\delta} = \input{\respath{3-state-ml-delta.tex}}
+\end{equation*}
+
+It is seen that the process is only in state 3 in little more than 5\% of the time. With a mean of $\lambda_3=14.927$ this state handles only the few weeks with exceptionally high sale figures. This is also seen in the data plot with state dependent means shown in figure~\ref{fig:3-state-ml}.
+
+\begin{figure}[ht]
+    \centering
+    \mbox{\subfigure{\includegraphics[width=70mm]{\plotpath{3-state-ml-histogram.pdf}}} \quad \subfigure{\includegraphics[width=70mm]{\plotpath{3-state-ml-means-on-data.pdf}}}}
+    \caption{Left plot is a plot of the marginal distribution of the 3-state Poisson-HMM above the histogram for the soap data set. Right plot is the soap data set with the estimated means of the two state conditional distributions of the 3-state Poisson-HMM.}
+    \label{fig:3-state-ml}
+\end{figure}
+
+\FloatBarrier
+
+\subsection*{Fitting a 4-state Poisson-HMM}
+
+As for the 2- and 3-state models different initial values are used when fitting the 4-state model, but unlike the 2- and 3-state models, the maximas obtained for the 4-state model is quite sensitive to the initial parameters. This is seen in table~\ref{tbl:4-state-fits} where 9 different initial values are used to fit a 4-state model.
+
+\begin{table}[ht]
+    \centering
+    \begin{tabular}{cccc}
+        $\gamma_{ij, i\neq j}$ & $\myvec{\lambda}_0$ & $\myvec{\lambda}$ & $-\ell$ \\\hline
+        \input{\respath{4-state-ml-fit-table.tex}}
+    \end{tabular}
+    \caption{Maximum likelihood for 9 different starting values for the 4-state Poisson-HMM}
+    \label{tbl:4-state-fits}
+\end{table}
+
+As with the 3-state model some of the found maximas have $\lambda_1<10^{-10}$ which effectively makes it a 3-state model. Ignoring the maximas with $\lambda_1$ very small the model is found with the initial parameters
+
+
+\begin{equation*}
+    \myvec{\Gamma}_0 = \begin{pmatrix}
+        0.97 & 0.01 & 0.01 & 0.01 \\
+        0.01 & 0.97 & 0.01 & 0.01 \\
+        0.01 & 0.01 & 0.97 & 0.01 \\
+        0.01 & 0.01 & 0.01 & 0.97
+    \end{pmatrix} \quad\quad \myvec{\lambda}_0 = \begin{pmatrix}
+        1 & 4 & 6 & 9
+    \end{pmatrix}
+\end{equation*}
+
+\noindent The estimates found are
+
+\begin{equation*}
+    \myvec{\Gamma} = \input{\respath{4-state-ml-gamma.tex}} \quad\quad
+    \myvec{\lambda} = \input{\respath{4-state-ml-lambda.tex}} 
+\end{equation*}
+
+\noindent and it is seen 4 of 16 elements in $\myvec{\Gamma}$ is smaller than $5\cdot10^{-4}$ which isn't surprising as explained on page 52 in \cite{zucchini09}. Also $\lambda_1=0.008$ is mathematically different from 0, but statistically it is probably not significantly different from 0\footnote{No error estimates of the parameters are calculated. See the section ``Remarks''}. Ignoring state 1 it is seen that the means of state 2,3,4 matches the means of state 1,2,3 in the 3-state model. From $\myvec{\Gamma}$ the stationary distribution is found as
+
+\begin{equation*}
+    \myvec{\delta} = \input{\respath{4-state-ml-delta.tex}}
+\end{equation*}
+
+Which further confirms that state 1 is handling special cases. Plots of the marginal distribution and the state dependent means are shown in figure~\ref{fig:4-state-ml}.
+
+\begin{figure}[ht]
+    \centering
+    \mbox{\subfigure{\includegraphics[width=70mm]{\plotpath{4-state-ml-histogram.pdf}}} \quad \subfigure{\includegraphics[width=70mm]{\plotpath{4-state-ml-means-on-data.pdf}}}}
+    \caption{Left plot is a plot of the marginal distribution of the 4-state Poisson-HMM above the histogram for the soap data set. Right plot is the soap data set with the estimated means of the two state conditional distributions of the 4-state Poisson-HMM.}
+    \label{fig:4-state-ml}
+\end{figure}
+
+The marginal distribution of the 4-state model is very much like the marginal distribution of the 3-state model and the question is whether the extra parameters in the 4-state model are needed
+
+\subsection*{Model selection}
+
+To choose between the 2-, 3- and 4-state model the AIC and the BIC of the models can be compared. Furthermore the mean, variance and correlation of the models can be compared with the sample mean, variance and correlation. To calculate the mean, variance and correlations for the models, the function \myverb{pois.HMM.moments} from exercise 2.9, is used.
+
+\begin{table}[ht]
+    \centering
+    \begin{tabular}{cccccccccccc}
+        \hline
+         & $\mu$ & $\sigma^2$ & $\rho_1$ & $\rho_2$ & $\rho_3$ & $\rho_4$ & $\rho_5$ & $\rho_6$ & $\rho_7$ \\\hline
+        \input{\respath{model-selection-ml-fit.tex}}
+    \end{tabular}
+    \caption{Mean, variance and correlation coefficients for the data and the three models. Note that $\rho_k=\text{Corr}(X_t, X_{t+k})$}
+    \label{tbl:moments-ml-fit}
+\end{table}
+
+\begin{table}[ht]
+    \centering
+    \begin{tabular}{ccc}
+        \hline
+         & AIC & BIC \\\hline
+        \input{\respath{aic-bic-ml-fit.tex}}
+    \end{tabular}
+    \caption{AIC and BIC scores for the three models}
+    \label{tbl:aic-bic-ml-fit}
+\end{table}
+
+From the results in table~\ref{tbl:moments-ml-fit} it is seen that all three model means are close to the sample mean. The variance of the 2-state model is lower than the sample variance and the correlation coefficients of the 2-state model are all lower than the sample correlation coefficients. On the other hand both the 3- and 4-state models seems to match both the variance and correlation coefficients of the sample pretty well. To choose between the 3- and 4-state model the AIC and BIC score are therefore used.
+
+From table~\ref{tbl:aic-bic-ml-fit} it is seen that the 3-state model scores better than the 4-state model in both AIC and BIC score. This indicates that a 4-state model might overfit the data. It is worth noting that the 2-state model has the lowest BIC of the three models. This is due to the fact that the BIC penalizes models with many parameters more\footnote{Whenever the number of observations is larger than $e^2\approx 7$} than the AIC score does. The low variance and correlation coefficients of the 2-state model, compared with the sample, rules out the 2-state model though and the final choice of model is the 3-state model.
+
+
+\section*{Question c: Fitting Poisson-HMMs using the EM algorithm}
+
+In this section 2-, 3- and 4-state Poisson-HMM models are fitted to the soap data set using the EM algorithm. The markov chain is assumed to not be stationary. As mentioned in section 4.2.5 in \cite{zucchini09} this makes the implementation of the EM algorithm easier. The distribution $\myvec{\delta}_0$ of the first state then needs to be determined; either by including the distribution in the parameters to estimate or by maximizing the likelihood conditioned on the Markov chain starting in a particular state ($\myvec{\delta}_0$ being a unitvector). As mentioned in section 4.2.4 the easiest approach is to maximize the likelihood conditioned on the Markov chain starting in a particular state, but since the implementation in appendix A.2.3 in \cite{zucchini09} estimates $\myvec{\delta}_0$ that is the approach taken in this assignment. As in the examples in section 4.3 in \cite{zucchini09} the starting values for $\myvec{\delta}_0$ is set as the uniform distribution.
+
+
+\subsection*{Fitting a 2-state Poisson-HMM}
+
+Using the same 9 initial parameter values as in the direct maximization of the likelihood the 2-state Poisson-HMM parameters was estimated by the EM algorithm. All 9 starting points gave the same maxima, so it is likely to be a global maxima. The estimated parameters was found as
+
+\begin{equation*}
+    \myvec{\Gamma} = \input{\respath{2-state-em-gamma.tex}} \quad\quad
+    \myvec{\lambda} = \input{\respath{2-state-em-lambda.tex}} 
+\end{equation*}
+
+\begin{equation*}
+    \myvec{\delta} = \input{\respath{2-state-em-delta.tex}}
+\end{equation*}
+
+\FloatBarrier
+
+\pagebreak
+
+\renewcommand\thesection{\Alph{section}}
+\section{Appendices}
+
+All R code used for this assignment is included here. All source code incl.
+latex code for this report can be found at \githuburl
+
+\subsection{Fitting results for 2-state Poisson-HMM}
+\label{app:2-state-ml-results}
+
+\begin{table}[ht]
+    \centering
+    \begin{tabular}{cccc}
+        $\gamma_{ij, i\neq j}$ & $\myvec{\lambda}_0$ & $\myvec{\lambda}$ & $-\ell$ \\\hline
+        \input{\respath{2-state-ml-fit-table.tex}}
+    \end{tabular}
+    \caption{Maximum likelihood for 9 different starting values for the 2-state Poisson-HMM}
+    \label{tbl:2-state-fits}
+\end{table}
+
+
+\subsection{Fitting results for 3-state Poisson-HMM}
+\label{app:3-state-ml-results}
+
+\begin{table}[ht]
+    \centering
+    \begin{tabular}{cccc}
+        $\gamma_{ij, i\neq j}$ & $\myvec{\lambda}_0$ & $\myvec{\lambda}$ & $-\ell$ \\\hline
+        \input{\respath{3-state-ml-fit-table.tex}}
+    \end{tabular}
+    \caption{Maximum likelihood for 9 different starting values for the 3-state Poisson-HMM}
+    \label{tbl:3-state-fits}
+\end{table}
+
+\pagebreak
+
+\nocite{*}
+\bibliographystyle{plain}
+\bibliography{../../../bibliography}
+
+\end{document}
