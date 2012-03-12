@@ -5,6 +5,11 @@ Olivier Cappé, Eric Moulinen, and Tobias Rydén.
 \newblock {\em Inference in Hidden Markov Models}.
 \newblock Springer New York, 1st edition, 2005.
 
+\bibitem{pitman93}
+Jim Pitman.
+\newblock {\em Probability}.
+\newblock Springer New York, 1st edition, 1993.
+
 \bibitem{zucchini09}
 Walter Zucchini and Iain~L. MacDonald.
 \newblock {\em Hidden Markov Models for Time Series}.
