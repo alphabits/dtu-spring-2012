@@ -2,44 +2,44 @@ This is BibTeX, Version 0.99c (TeX Live 2009/Debian)
 The top-level auxiliary file: assignment-1.aux
 The style file: plain.bst
 Database file #1: ../../../bibliography.bib
-You've used 1 entry,
+You've used 2 entries,
             2118 wiz_defined-function locations,
-            503 strings with 4127 characters,
-and the built_in function-call counts, 279 in all, are:
-= -- 24
-> -- 13
+            508 strings with 4238 characters,
+and the built_in function-call counts, 569 in all, are:
+= -- 50
+> -- 31
 < -- 0
-+ -- 5
-- -- 4
-* -- 16
-:= -- 54
-add.period$ -- 3
-call.type$ -- 1
-change.case$ -- 5
++ -- 12
+- -- 10
+* -- 35
+:= -- 105
+add.period$ -- 6
+call.type$ -- 2
+change.case$ -- 11
 chr.to.int$ -- 0
-cite$ -- 1
-duplicate$ -- 12
-empty$ -- 23
-format.name$ -- 4
-if$ -- 56
+cite$ -- 2
+duplicate$ -- 24
+empty$ -- 45
+format.name$ -- 10
+if$ -- 116
 int.to.chr$ -- 0
-int.to.str$ -- 1
-missing$ -- 2
-newline$ -- 8
-num.names$ -- 2
-pop$ -- 8
+int.to.str$ -- 2
+missing$ -- 4
+newline$ -- 13
+num.names$ -- 4
+pop$ -- 17
 preamble$ -- 1
-purify$ -- 4
+purify$ -- 9
 quote$ -- 0
-skip$ -- 7
+skip$ -- 13
 stack$ -- 0
-substring$ -- 5
-swap$ -- 1
+substring$ -- 10
+swap$ -- 2
 text.length$ -- 0
 text.prefix$ -- 0
 top$ -- 0
-type$ -- 2
+type$ -- 4
 warning$ -- 0
-while$ -- 2
-width$ -- 2
-write$ -- 13
+while$ -- 4
+width$ -- 3
+write$ -- 24

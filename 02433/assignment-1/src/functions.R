@@ -123,6 +123,21 @@ plot.fit.results = function (x, fit, label) {
                   ylab="")
 }
 
+plot.predicted.states = function (x, states, lambda, ...) {
+    plot.ys = get.ys.for.state.plot(states, lambda)
+    plot(x, type="l", ...)
+    points(plot.ys, pch=20)
+}
+
+get.ys.for.state.plot = function (states, lambda) {
+    ys = rep(0, length(states))
+    for (state.num in 1:length(lambda)) {
+        active.points = states==state.num
+        ys = ys + lambda[state.num]*active.points
+    }
+    return(ys)
+}
+
 latex.matrix = function (mat, digit.format='%.03f') {
     if (!class(mat) == "matrix") {
         mat = matrix(mat, ncol=length(mat))

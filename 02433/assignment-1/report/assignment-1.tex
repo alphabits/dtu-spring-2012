@@ -226,8 +226,78 @@ Using the same 9 initial parameter values as in the direct maximization of the l
 \end{equation*}
 
 \begin{equation*}
-    \myvec{\delta} = \input{\respath{2-state-em-delta.tex}}
+    \myvec{\delta}_0 = \input{\respath{2-state-em-delta.tex}}
 \end{equation*}
+
+It is seen that the distribution of the initial state is found as a unit vector which following section 4.2.4 in \citep{zucchini09} is to be expected at a maxima. It is also noticing that the found parameters for $\myvec{\Gamma}$ and $\myvec{\lambda}$ is almost the same as those found by direct maximization of the likelihood function. Consulting table \ref{tbl:2-state-fits-em} in \appref{2-state-em-results} shows that the maximum likehood value is slightly higher for the EM algorithm than for the direct maximization. As mentioned in section 4.3.1 in \cite{zucchini09} this is also expected since the initial distribution was constrained to be the stationary distribution when fitting by direct maximization.
+
+\subsection*{Fitting a 3-state Poisson-HMM using the EM algorithm}
+
+Using the same initial parameters as for the direct maximization method and using a uniform distribution as the starting value for the initial distribution $\myvec{\delta}_0$, a 3-state Poisson-HMM was fitted to the soap data by the EM algorithm. All results are shown in table \ref{tbl:3-state-fits-em} in \appref{3-state-em-results} and it is seen that two distinct maximas was found. The best maxima found had the parameters
+
+\begin{equation*}
+    \myvec{\Gamma} = \input{\respath{3-state-em-gamma.tex}} \quad\quad
+    \myvec{\lambda} = \input{\respath{3-state-em-lambda.tex}} 
+\end{equation*}
+
+\begin{equation*}
+    \myvec{\delta}_0 = \input{\respath{3-state-em-delta.tex}}
+\end{equation*}
+
+Again the estimated initial distribution is seen to be a unit vector as expected. Also the found parameters are almost identical to the parameters found by direct maximization and the likelihood value is a bit higher for the maxima found be the EM algorithm.
+
+\subsection*{Fitting a 4-state Poisson-HMM using the EM algorithm}
+
+Using the same starting values as for the direct maximization and using a uniform distribution for the starting value of the initial state distribution a 4-state Poisson-HMM was fitted. All results are shown in table \ref{tbl:4-state-fits-em} in \appref{4-state-em-results} and it is seen that only 3 different maximas was found. Using the direct maximization method gave 6 different maximas for the 4-state model so for this particular data set the EM algorithm seems to be less sensitive to the starting values. The best maxima was found with the parameters given by
+
+\begin{equation*}
+    \myvec{\Gamma} = \input{\respath{4-state-em-gamma.tex}} \quad\quad
+    \myvec{\lambda} = \input{\respath{4-state-em-lambda.tex}} 
+\end{equation*}
+
+\begin{equation*}
+    \myvec{\delta}_0 = \input{\respath{4-state-em-delta.tex}}
+\end{equation*}
+
+\noindent As expected the estimated initial state distribution is a unit vector. The log likelihood value at the maximum is $\ell_{\text{em}}=-602.77$ which is higher than the maximum value $\ell_{\text{dir}}=-604.19$ found using the direct maximization method.
+
+\subsection*{Comparing the direct maximization method with the EM algorithm}
+
+In this section a few comments about the pros and cons of the direct maximization method as well as the EM algorithm is made.
+
+Since implementations of both methods is given in \citep{zucchini09} the work involved in fitting Poisson-HMMs using the 2 methods was more or less the same. Also since the data set is rather small, no significant differences in the performances of the two algorithms was noticed. For some initial parameter values \myverb{NA} values were produced by the \myverb{nlm} method when using the direct maximization method. Since the EM algorithm for a Poisson-HMM do not rely on nummerical optimization this wasn't a problem for the EM algorithm. Another point already mentioned in a previous section is the fact that the EM algorithm did find maximas with slightly higher likelihood values, since it do not assume stationary distribution of the Markov Chain. Based on the concrete experience of fitting the soap data to 2-, 3- and 4-state Poisson-HMMs the preferred algorithm would probably be the EM algorithm.
+
+Since the soap data set is the only data set I have ever fitted to a HMM, the previous choice of algorithm isn't based on any more general experiences with HMMs. Reading the discussions in section 4.4 in \citep{zucchini09} and section 10.1.4 in \citep{cappe05} it seems that the direct maximization method is converging faster. And with the high availability of robust numerical optimization algorithms, much of the work in implementing the direct maximization method is already taken care of. To sum up the discussions. If the M-step in the EM algorithm do not have a analytical solution, the direct maximization method is preferred, but if the M-step do have an analytical solution the choice of algorithm is still debatable.
+
+
+\section*{Question d: Local and global decoding and state prediction} 
+
+In this section a local decoding is applied to the 3-state Poisson-HMM fitted by the EM algorithm. For each week $t$ the maximum of $\text{Pr}(C_t=i\,|\,\myvec{X}^{(T)}=\myvec{x}^{(T)})$ across the states $i=1,2,3$ is found using equation 5.6 in \citep{zucchini09}. An implementation that tries to avoid underflow is given in A.2.7 in \citep{zucchini09} and that is what is used. The result is given in figure~\ref{fig:local-decoding}
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=140mm]{\plotpath{local-decoding.pdf}}
+    \caption{CAPTION XXX}
+    \label{fig:local-decoding}
+\end{figure}
+
+When the states in the HMM represents something meaningful it may be more interesting to find the sequence of states that maximizes $\text{Pr}(\myvec{C}^{(T)}=\myvec{c}^{(T)}\,|\,\myvec{X}^{(T)}=\myvec{x}^{(T)})$. Whether this is the case for the Poisson-HMM model of the soap sales is not entirely clear, but using the Viterbi algorithm (as implemented in A.2.4 in \citep{zucchini09}) a global decoding of the 3-state fitted Poisson-HMM is applied giving the result in figure~\ref{fig:global-decoding}.
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=140mm]{\plotpath{global-decoding.pdf}}
+    \caption{CAPTION XXX}
+    \label{fig:global-decoding}
+\end{figure}
+
+The difference between the local and global decoding is minor. Running
+
+\begin{lstlisting}
+    sum(1*(local.decoding!=global.decoding))
+\end{lstlisting}
+
+shows that only in 7 weeks is there a difference between the local and global decoding.
+
 
 \FloatBarrier
 
@@ -239,7 +309,7 @@ Using the same 9 initial parameter values as in the direct maximization of the l
 All R code used for this assignment is included here. All source code incl.
 latex code for this report can be found at \githuburl
 
-\subsection{Fitting results for 2-state Poisson-HMM}
+\subsection{Fitting 2-state Poisson-HMM by direct maximization of MLE}
 \label{app:2-state-ml-results}
 
 \begin{table}[ht]
@@ -251,9 +321,11 @@ latex code for this report can be found at \githuburl
     \caption{Maximum likelihood for 9 different starting values for the 2-state Poisson-HMM}
     \label{tbl:2-state-fits}
 \end{table}
+\FloatBarrier
+\pagebreak
 
 
-\subsection{Fitting results for 3-state Poisson-HMM}
+\subsection{Fitting 3-state Poisson-HMM by direct maximization of MLE}
 \label{app:3-state-ml-results}
 
 \begin{table}[ht]
@@ -265,10 +337,57 @@ latex code for this report can be found at \githuburl
     \caption{Maximum likelihood for 9 different starting values for the 3-state Poisson-HMM}
     \label{tbl:3-state-fits}
 \end{table}
-
+\FloatBarrier
 \pagebreak
 
-\nocite{*}
+\subsection{Fitting 2-state Poisson-HMM with the EM algorithm}
+\label{app:2-state-em-results}
+
+\begin{table}[ht]
+    \centering
+    \begin{tabular}{cccc}
+        $\gamma_{ij, i\neq j}$ & $\myvec{\lambda}_0$ & $\myvec{\lambda}$ & $-\ell$ \\\hline
+        \input{\respath{2-state-em-fit-table.tex}}
+    \end{tabular}
+    \caption{Maximum likelihood for 9 different starting values for the 2-state Poisson-HMM}
+    \label{tbl:2-state-fits-em}
+\end{table}
+\FloatBarrier
+\pagebreak
+
+\subsection{Fitting 3-state Poisson-HMM with the EM algorithm}
+\label{app:3-state-em-results}
+
+\begin{table}[ht]
+    \centering
+    \begin{tabular}{cccc}
+        $\gamma_{ij, i\neq j}$ & $\myvec{\lambda}_0$ & $\myvec{\lambda}$ & $-\ell$ \\\hline
+        \input{\respath{3-state-em-fit-table.tex}}
+    \end{tabular}
+    \caption{Maximum likelihood for 9 different starting values for the 3-state Poisson-HMM}
+    \label{tbl:3-state-fits-em}
+\end{table}
+\FloatBarrier
+\pagebreak
+
+\subsection{Fitting 4-state Poisson-HMM with the EM algorithm}
+\label{app:4-state-em-results}
+
+\begin{table}[ht]
+    \centering
+    \begin{tabular}{cccc}
+        $\gamma_{ij, i\neq j}$ & $\myvec{\lambda}_0$ & $\myvec{\lambda}$ & $-\ell$ \\\hline
+        \input{\respath{4-state-em-fit-table.tex}}
+    \end{tabular}
+    \caption{Maximum likelihood for 9 different starting values for the 4-state Poisson-HMM}
+    \label{tbl:4-state-fits-em}
+\end{table}
+
+\FloatBarrier
+\pagebreak
+
+\nocite{zucchini09}
+\nocite{cappe05}
 \bibliographystyle{plain}
 \bibliography{../../../bibliography}
 
