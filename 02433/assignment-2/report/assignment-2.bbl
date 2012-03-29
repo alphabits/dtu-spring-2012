@@ -1,0 +1,13 @@
+\begin{thebibliography}{1}
+
+\bibitem{waever11}
+Martin~Wæver Pedersen.
+\newblock {HMM} analysis of general state-space models.
+\newblock \url{http://www2.imm.dtu.dk/~mwp/02433/week7_notes.pdf}, June 2011.
+
+\bibitem{zucchini09}
+Walter Zucchini and Iain~L. MacDonald.
+\newblock {\em Hidden Markov Models for Time Series}.
+\newblock Chapman \& Hall/CRC, 1st edition, 2009.
+
+\end{thebibliography}
