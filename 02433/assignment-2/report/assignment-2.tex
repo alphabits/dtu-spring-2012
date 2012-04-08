@@ -18,13 +18,13 @@
     X_t &= P_t + u_t \label{eq:observation}
 \end{align}
 %
-where $P_t$ is the log-population size and $e_t\sim N(0,Q)$, $u_t\sim N(0,R)$ are iid. and mutually independent. $K,r_0,\theta$ are scalar parameters that combined with the two variances $Q$ and $R$ gives a total of five parameters $\myvec{\lambda} = (\theta, r_0, K, Q, R)$.
+where $P_t$ is the log-population size and $e_t\sim N(0,Q)$, $u_t\sim N(0,R)$ are iid. and mutually independent. The constant $K$ is the log-population size when stability is reached. Equation (\ref{eq:state-update}) expresses the fact that whenever $P_t>\log(K)$ then $P_{t+1}<P_t$ with high probability. Therefore it is assumed that $K,\theta$ and $r_0$ are all positive. Since $Q$ and $R$ are variances they are also assumed positive. All five parameters are combined in the parameter vector $\myvec{\lambda} = (\theta, r_0, K, Q, R)$.
 
 \section*{a) Plotting the data}
 %
-To start the analysis the two datasets are plotted and shown in figure~\ref{fig:dataplots}
+To start the analysis the two datasets are plotted and shown in figure~\ref{fig:dataplots}. From the figure it is seen that the two datasets have a very similar overall structure. For both dataset $P_1\approx 3$ and stationarity is reached around $K\approx\exp(7)\approx1100$.
 %
-\begin{figure}
+\begin{figure}[tb]
     \centering
     \includegraphics[width=140mm]{\plotpath{dataset-1.pdf}}
     \includegraphics[width=140mm]{\plotpath{dataset-2.pdf}}
@@ -32,15 +32,16 @@ To start the analysis the two datasets are plotted and shown in figure~\ref{fig:
     \label{fig:dataplots}
 \end{figure}
 %
-\todo{Comment on plots}
 
 \section*{b) Approximating the SSM by a HMM}
 %
-By assuming that the state-space is restricted it can be discretizised and by this discretization the state-space model can be expressed as an Hidden markov model instead. For the state-space model given in equation \ref{eq:state-update} and \ref{eq:observation} it is now assumed that $P_t\in[2.1,8.4]$ and that the state-space is partitioned into $m=250$ intervals $\Omega_i=(b_{i-1},b_i)$ where $i=1,\dots,m$. The width of each interval is then given by
+By assuming that the state-space $P_t$ is bounded it can be discretizised and by this discretization the state-space model can be expressed as an Hidden markov model instead. 
+
+For the state-space model given in equation \ref{eq:state-update} and \ref{eq:observation} it is now assumed that $P_t\in[2.1,8.4]$ and that the state-space is partitioned into $m=250$ intervals $\Omega_i=(b_{i-1},b_i)$ where $i=1,\dots,m$. The width of each interval is then given by
 \begin{align*}
     w = \frac{8.4 - 2.1}{250} = 0.0252
 \end{align*}
-and the boundaries can then be expressed as $b_i = 2.1 + wi$. If $P_t\in\Omega_i$ it is said to be in state $i$ which is also written $C_t=i$. Each discrete state $i$ is represented by the midpoint $p_i$ of the interval $(b_{i-1},b_i)$ given by $p_i = 2.1 + w(i-0.5)$. This links the discrete, integer valued state-space $C_t$ to the original continous state-space $P_t$.
+and the boundaries can be expressed as $b_i = 2.1 + wi$. If $P_t\in\Omega_i$ it is said to be in state $i$ which corresponds to the discrete state-space variable $C_t$ being equal to $i$. Each discrete state $i$ is represented by the midpoint $p_i$ of the interval $(b_{i-1},b_i)$ given by $p_i = 2.1 + w(i-0.5)$. This links the discrete, integer valued state-space $C_t$ to the original continous state-space $P_t$.
 
 To express the state-space model as a Hidden markov model the state dependent distibutions should be found. The distribution of $X_t\given C_t=i$ is found by replacing $P_t$ with the representation point $p_i$ in equation (\ref{eq:observation}). Combined with $u_t\sim N(0,R)$ gives that 
 %
@@ -65,7 +66,7 @@ Letting $n(\bullet, \mu, \sigma^2)$ denote the Gaussian pdf with mean $\mu$ and 
     \Pr(P_t\in\Omega_j\given C_{t-1}=i) = \Pr(C_t=j\given C_{t-1}=i) = \int_{\Omega_j} n(p_t, \mu_i, Q)\, dp_t
 \end{equation*}
 %
-This integral could be calculated by using the cumulative distribution function for the normal distribution, but as mentioned on page 13 in \citep{waever11} this is more expensive than approximating the integral using the trapezoidal rule for integration. Using the trapezoidal rule gives
+This integral could be calculated by using the cumulative distribution function for the normal distribution, but as mentioned on page 13 in \citep{waever11} this is more computational expensive than approximating the integral using the trapezoidal rule for integration. Using the trapezoidal rule gives
 %
 \begin{equation*}
     \Pr(C_t = j\given C_{t-1}=i) \approx \frac{w}{2}\left(n(b_{j-1}, \mu_i, Q) + n(b_j, \mu_i, Q)\right)
@@ -73,6 +74,41 @@ This integral could be calculated by using the cumulative distribution function 
 
 
 \section*{c) Computing the likelihood}
+
+In this section a function that evaluates the likelihood of the discretized state-space model is created. Since the discretized state-space model is a HMM the algorithm described on page 47 in \citep{zucchini09} can be used. To implement the algorithm a few details need to be handled.
+
+The markov chain of the discretized SSM can not be assumed stationary so an initial state distribution is needed. This is done by using the approximation mentioned on the bottom of page 7 in \citep{waever11}.
+
+Also the constraints on the parameters $\myvec{\lambda}=(\theta, r_0, K, Q, R)$ need to be handled. Since all parameters are constrained to be positive reals the logarithm of the natural parameters will be unconstrained which gives the working parameters
+\begin{equation*}
+    \myvec{\tau} = \log(\myvec{\lambda})
+\end{equation*}
+Going from working parameters to natural parameters is then
+\begin{equation*}
+    \myvec{\lambda} = \exp(\myvec{\tau})
+\end{equation*}
+(where $\log$ and $\exp$ is element-wise functions).
+
+Finally the state dependent distributions are continous so if one of the means $\mu_i$ equals one of the observations $x_t$ and we then let $Q\to0$ the likelihood will be unbounded. The implementation in this section will not take care of this detail though.
+
+\subsection*{Implementation}
+
+The implementation of the log likelihood function is shown in \coderef{mllk}. The function takes the working parameters in a vector and returns the minus log likelihood value. This makes it easy to use the build-in unconstrained minization function \myverb{nlm} to maximize the likelihood. The implementation shown in \coderef{mllk} is taken a bit out of context. The function definition is part of the parent function \myverb{get.HMM.model} for which the source code is shown in \appref{modelfunction}. The reason that the \myverb{HMM.mllk} and \myverb{HMM.mle} functions are created by another function is to let them easily share variables (eg. the data \myverb{x}, the boundary points \myverb{b.i}, the representative points \myverb{p.i} etc.) without cluttering the global namespace. The concept that functions created within a parent function has access to the variables of the parent function -- even after the parent function has returned its value -- is called closure. 
+
+\lstinputlisting[firstline=36,lastline=57,caption={Function that calculates the minus log likelihood of the discretized SSM. The function depends on variables defined in the closure of the function definition. See \appref{modelfunction} for the complete source code},label={src:mllk}]{\srcpath{mllk.R}}
+%
+The \myverb{HMM.mllk} function also uses a helper function \myverb{calc.gamma} to calculate the transition probability matrix. The \myverb{calc.gamma} function is also defined within the \myverb{get.HMM.model} function and therefore also have access to eg. the representative points \myverb{p.i}.
+
+\lstinputlisting[firstline=19,lastline=34,caption={The helper function \myverb{calc.gamma} used in the \myverb{HMM.mllk} function}]{\srcpath{mllk.R}}
+
+To actually calculate the minus log likelihood for a specific choice of parameters we call
+
+\lstinputlisting[caption={Using the implementation in \coderef{mllk}}]{\srcpath{calculate-mllk.R}}
+%
+The function \myverb{get.HMM.model} is called with the data \myverb{dat1}, the number of intervals, and the state-space boundaries. The returned list contains all functions related to the model and these functions have access to the data due to the closure created by the \myverb{get.HMM.model} function.
+
+
+\section*{d) Estimating parameters}
 
 \FloatBarrier
 
@@ -83,8 +119,9 @@ This integral could be calculated by using the cumulative distribution function 
 
 All R code created for this assignment is included here. All source code incl. latex code for this report can be found at \githuburl
 
-\subsection{Fitting 2-state Poisson-HMM by direct maximization of MLE}
-\label{app:2-state-ml-results}
+\subsection{Function creating model functions}
+\label{app:modelfunction}
+\lstinputlisting{\srcpath{mllk.R}}
 
 
 \nocite{zucchini09,waever11}

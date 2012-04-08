@@ -87,9 +87,11 @@
 \newcommand\acf{ACF}
 \newcommand\pacf{PACF}
 \newcommand\appref[1]{appendix~\ref{app:#1}}
+\newcommand\coderef[1]{code listing~\ref{src:#1}}
 \newcommand\todo[1]{\textbf{\textcolor{red}{#1}}}
 \newcommand\plotpath[1]{../plots/#1}
 \newcommand\respath[1]{../results/#1}
+\newcommand\srcpath[1]{../src/#1}
 
 \usepackage[scaled]{beramono}
 \usepackage{listings}
@@ -99,6 +101,8 @@
     commentstyle=\textit, % cmtt doesn't do italics. It might do slanted text though.
     keywordstyle=,
     identifierstyle=,
+    aboveskip=12pt,
+    abovecaptionskip=6pt,
     framextopmargin=4pt,
     framexbottommargin=4pt,
     framexleftmargin=4pt,

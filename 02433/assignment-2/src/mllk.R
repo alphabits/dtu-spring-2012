@@ -1,9 +1,15 @@
-get.mllk.and.mle = function (m) {
-    m = 250
-    w = 6.3/m
+inv.hessian.from.working.hessian = function (working.hessian, minimum) {
+    inv.working.hessian = solve(working.hessian)
+    M = diag(minimum)
+    return(t(M) %*% inv.working.hessian %*% M)
+}
+
+get.HMM.model = function (x, m, state.bounds=c(2.1, 8.4)) {
+    T = length(x)
+    w = diff(state.bounds)/m
     i = 1:m
-    p.i = 2.1 + w*(i - 0.5)
-    b.i = 2.1 + w*i
+    p.i = state.bounds[1] + w*(i - 0.5)
+    b.i = state.bounds[1] + w*i
     theta.ind = 1
     r0.ind = 2
     K.ind = 3
@@ -27,10 +33,9 @@ get.mllk.and.mle = function (m) {
         return(trans.prob)
     }
 
-    HMM.mllk = function(working.params, x, ...) {
+    HMM.mllk = function(working.params) {
         params = exp(working.params)
         R = params[R.ind]
-        T = length(x)
 
         Ps = outer(x, p.i, dnorm, sqrt(R))
         Ps[is.na(Ps)] = 1
@@ -51,30 +56,23 @@ get.mllk.and.mle = function (m) {
         return(-llk)
     }
 
-    HMM.mle = function(x, params, ...) {
-        working.params = log(params)
-        res = nlm(HMM.mllk, working.params, x=x, hessian=TRUE)
-        params = exp(res$estimate)
+    HMM.mle = function(initial.params) {
+        initial.working.params = log(initial.params)
+        res = nlm(HMM.mllk, initial.working.params, x=x, hessian=TRUE)
+        mle = exp(res$estimate)
         mllk = res$minimum
         num.params = length(params)
         AIC = 2*(mllk+num.params)
         num.obs = sum(!is.na(x))
         BIC = 2*mllk+num.params*log(num.obs)
-        list(params=params, code=res$code, mllk=mllk, AIC=AIC, BIC=BIC,
-             hessian=res$hessian)
+        var.cov = inv.hessian.from.working.hessian(res$hessian, params)
+        list(mle=mle, code=res$code, mllk=mllk, AIC=AIC, BIC=BIC,
+             var.cov=var.cov)
     }
 
-    return(list(mllk=HMM.mllk, mle=HMM.mle))
-}
-
-inv.hessian.from.working.hessian = function (working.hessian, minimum) {
-    inv.working.hessian = solve(working.hessian)
-    M = diag(minimum)
-    return(t(M) %*% inv.working.hessian %*% M)
+    return(list(mle=HMM.mle, mllk=HMM.mllk))
 }
 
 
-# After some trial and error these params might be good starting params
-params = c(0.5, 0.2, 1000, 0.01, 0.05)
 
 
