@@ -22,7 +22,7 @@ where $P_t$ is the log-population size and $e_t\sim N(0,Q)$, $u_t\sim N(0,R)$ ar
 
 \section*{a) Plotting the data}
 %
-To start the analysis the two datasets are plotted and shown in figure~\ref{fig:dataplots}. From the figure it is seen that the two datasets have a very similar overall structure. For both dataset $P_1\approx 3$ and stationarity is reached around $K\approx\exp(7)\approx1100$.
+To start the analysis the two datasets are plotted and shown in figure~\ref{fig:dataplots}. From the figure it is seen that the two datasets have a very similar overall structure. For both dataset $P_1\approx 3$ and stationarity is reached around $K\approx\exp(7)\approx1000$.
 %
 \begin{figure}[tb]
     \centering
@@ -95,11 +95,11 @@ Finally the state dependent distributions are continous so if one of the means $
 
 The implementation of the log likelihood function is shown in \coderef{mllk}. The function takes the working parameters in a vector and returns the minus log likelihood value. This makes it easy to use the build-in unconstrained minization function \myverb{nlm} to maximize the likelihood. The implementation shown in \coderef{mllk} is taken a bit out of context. The function definition is part of the parent function \myverb{get.HMM.model} for which the source code is shown in \appref{modelfunction}. The reason that the \myverb{HMM.mllk} and \myverb{HMM.mle} functions are created by another function is to let them easily share variables (eg. the data \myverb{x}, the boundary points \myverb{b.i}, the representative points \myverb{p.i} etc.) without cluttering the global namespace. The concept that functions created within a parent function has access to the variables of the parent function -- even after the parent function has returned its value -- is called closure. 
 
-\lstinputlisting[firstline=36,lastline=57,caption={Function that calculates the minus log likelihood of the discretized SSM. The function depends on variables defined in the closure of the function definition. See \appref{modelfunction} for the complete source code},label={src:mllk}]{\srcpath{mllk.R}}
+\lstinputlisting[firstline=35,lastline=56,caption={Function that calculates the minus log likelihood of the discretized SSM. The function depends on variables defined in the closure of the function definition. See \appref{modelfunction} for the complete source code},label={src:mllk}]{\srcpath{model.R}}
 %
 The \myverb{HMM.mllk} function also uses a helper function \myverb{calc.gamma} to calculate the transition probability matrix. The \myverb{calc.gamma} function is also defined within the \myverb{get.HMM.model} function and therefore also have access to eg. the representative points \myverb{p.i}.
 
-\lstinputlisting[firstline=19,lastline=34,caption={The helper function \myverb{calc.gamma} used in the \myverb{HMM.mllk} function}]{\srcpath{mllk.R}}
+\lstinputlisting[firstline=18,lastline=33,caption={The helper function \myverb{calc.gamma} used in the \myverb{HMM.mllk} function}]{\srcpath{model.R}}
 
 To actually calculate the minus log likelihood for a specific choice of parameters we call
 
@@ -110,8 +110,138 @@ The function \myverb{get.HMM.model} is called with the data \myverb{dat1}, the n
 
 \section*{d) Estimating parameters}
 
-\FloatBarrier
+In this section a function to estimate the parameters of the model by maximum likelihood is implemented. The function will also return an estimate of the standard errors of the maximum likelihood estimates. The error estimates are calculated from the hessian of minus the log likelihood at the minimum using equation 3.2 in \citep{zucchini09} to express the hessian wrt. the natural parameters $\myvec{\lambda}$. The implementation is shown in \coderef{mle} and the function \myverb{HMM.mle} is also defined within the function \myverb{get.HMM.model} which gives it access to the data \myverb{x} due to the closure explained in the previous section.
 
+\lstinputlisting[firstline=58,lastline=73,caption={Function to estimate the parameters by maximum likelihood},label={src:mle}]{\srcpath{model.R}}
+
+The function \myverb{HMM.mle} uses the helper function \myverb{inv.hessian.from.working.hessian} to calculate an estimate of the variance-covariance matrix. The function \myverb{inv.hessian.from.working.hessian} is shown in \coderef{hessian}
+
+\lstinputlisting[firstline=1,lastline=4,caption={Function to transform the hessian from working parameters to natural parameters},label={src:hessian}]{\srcpath{model.R}}
+
+\subsection*{Estimating parameters for dataset 1}
+
+To estimate the parameters of dataset 1 some initial parameters need to be determined. From figure~\ref{fig:dataplots} it seems that $K\approx e^{7}\approx1000$. The other parameters are a bit harder to determine but it seems plausible to keep $\theta$ and $r_0$ small (0.5-1). After some fiddling the starting parameters\footnote{To ensure that the maximum found isn't a local maximum much smaller than the global maximum, some other starting parameters was tried. They all gave the same maximum which indicates that the parameter estimates may be the maximum likelihood estimates.} was chosen as
+
+
+\begin{equation*}
+    \myvec{\lambda}_0 = \begin{pmatrix}
+        0.5 & 0.2 & 1000 & 0.01 & 0.05
+    \end{pmatrix}
+\end{equation*}
+%
+Calculating the maximum likelihood gave the parameter estimates
+%
+\begin{equation*}
+    \widehat{\myvec{\lambda}} = \begin{pmatrix}
+        \input{\respath{cont-dataset-1-param-1-estimate-edit.tex}}
+    \end{pmatrix}
+\end{equation*}
+
+with $-\ell = \input{\respath{cont-dataset-1-param-1-mllk}}$\footnote{The likelihood value at the maximum is very high. This is probably due to the fact that the state dependent probabilities are calculated as point values of the normal density function instead of ``real'' probabilities.} and $\text{AIC}=\input{\respath{cont-dataset-1-param-1-aic}}$.
+%
+Using the hessian returned from the \myverb{nlm} function an approximate variance-covariance matrix was calculated as
+%
+\begin{equation*}
+    \widehat{\Var{\myvec{\widehat{\lambda}}}} = \begin{pmatrix}
+        \input{\respath{cont-dataset-1-param-1-varcov-edit.tex}}
+    \end{pmatrix}
+\end{equation*}
+%
+From the approximate variance-covariance matrix the correlation of all pairs of parameter estimates can be calculated. The three numerically largest was
+%
+\begin{equation*}
+    \Corr{\widehat{\theta}, \widehat{r_0}} = -0.954\quad\quad
+    \text{and}\quad\quad
+    \Corr{\widehat{Q}, \widehat{R}} = -0.315\quad\quad
+    \text{and}\quad\quad
+    \Corr{\widehat{\theta}, \widehat{Q}} = 0.247
+\end{equation*}
+%
+The large negative correlation between $\widehat{\theta}$ and $\widehat{r_0}$ can be explained by looking at the expression
+\begin{equation*}
+    r_0\left(1 - \left[\frac{\exp{(P_{t-1})}}{K}\right]^\theta\right)
+\end{equation*}
+An increase in $\theta$ will always make the above expression numerically larger. To counteract this we can decrease $r_0$. Therefore datasets that makes $\widehat{\theta}>\E{\widehat{\theta}}$ will with high probability make $\widehat{r_0}<\E{\widehat{r_0}}$, since the above expression represents the expected change in population level and the true expected change in population level is independent of how we choose to parameterize our model.
+
+That $\widehat{Q}$ and $\widehat{R}$ are negatively correlated can be explained by substituting equation (\ref{eq:state-update}) into equation (\ref{eq:observation}), which gives a term $u_t+e_t$ that is normal distributed with variance $Q+R$.
+
+From the variance-covariance matrix confidence intervals for the parameter estimates can be calculated and the result is shown in table~\ref{tbl:params-dataset-1}. 
+
+\begin{table}[htb]
+    \centering
+    \begin{tabular}{lr|rr|r}
+         & \multicolumn{1}{r}{Estimate} & \multicolumn{2}{c}{95\% Conf.Int} & Std.Dev \\\hline
+        \input{\respath{cont-dataset-1-param-1-confidence.tex}} \\
+    \end{tabular}
+    \caption{Parameter estimates with 95\% confidence intervals calculated from the inverse hessian at the maximum}
+    \label{tbl:params-dataset-1}
+\end{table}
+
+It is seen that the confidence intervals for both $\widehat{\theta}$ and $\widehat{r_0}$ includes 0 and in general the standard deviation of the estimators are large relative to the corresponding estimates.
+
+
+\subsection*{Estimating parameters for dataset 2}
+
+From figure~\ref{fig:dataplots} is seems that dataset 2 is from a population that is similar to the population of dataset 1. Therefore the same initial parmeters are used
+
+Calculating the maximum likelihood estimates gives the parameter estimate
+%
+\begin{equation*}
+    \widehat{\myvec{\lambda}} = \begin{pmatrix}
+        \input{\respath{cont-dataset-2-param-1-estimate-edit.tex}}
+    \end{pmatrix}
+\end{equation*}
+%
+with $-\ell = \input{\respath{cont-dataset-2-param-1-mllk}}$ and $\text{AIC}=\input{\respath{cont-dataset-2-param-1-aic}}$. Comparing the estimates for dataset 2 with the estimates for dataset 1 it is seen that most parameter estimates are almost equal. Only the estimate of $\theta$ differs; the estimate from dataset 2 is twice the size of the estimate from dataset 1, but notice that $\widehat{\theta}$ from dataset 2 is within the 95\% confidence interval of $\widehat{\theta}$ from dataset 1.
+
+The approximate variance-covariance matrix is found as
+%
+\begin{equation*}
+    \widehat{\Var{\myvec{\widehat{\lambda}}}} = \begin{pmatrix}
+        \input{\respath{cont-dataset-2-param-1-varcov-edit.tex}}
+    \end{pmatrix}
+\end{equation*}
+%
+and the numerically largest correlations are found to be
+%
+\begin{equation*}
+    \Corr{\widehat{\theta}, \widehat{r_0}} = -0.807\quad\quad
+    \text{and}\quad\quad
+    \Corr{\widehat{Q}, \widehat{R}} = -0.465\quad\quad
+    \text{and}\quad\quad
+    \Corr{\widehat{\theta}, \widehat{Q}} = 0.452
+\end{equation*}
+%
+It is seen that it is the same pairs of estimators as for dataset 1.
+
+From the variance-covariance matrix confidence intervals for the parameter estimates can be calculated and the result is shown in table~\ref{tbl:params-dataset-2}
+
+\begin{table}[htb]
+    \centering
+    \begin{tabular}{lr|rr|r}
+         & \multicolumn{1}{r}{Estimate} & \multicolumn{2}{c}{95\% Conf.Int} & Std.Dev \\\hline
+        \input{\respath{cont-dataset-2-param-1-confidence.tex}} \\
+    \end{tabular}
+    \caption{Parameter estimates for dataset 2 with 95\% confidence intervals calculated from the inverse hessian at the maximum}
+    \label{tbl:params-dataset-2}
+\end{table}
+
+It is seen that the 95\% confidence interval for $\theta$ still includes 0 but the standard errors for both $r_0$ and $K$ has decreased compared with the standard errors calculated from dataset 1.
+
+\section*{e) Local decoding}
+
+In this section local decoding for the two fitted HMMs will be calculated. The implementation is based on A.2.2, A.2.5 and A.2.6 in \citep{zucchini09} and can be seen in \appref{modelfunction}.
+Using the implementation local decodings was calculated and plotted which is shown in figure~\ref{fig:decoding}.
+
+\begin{figure}[tb]
+    \centering
+    \includegraphics[width=140mm]{\plotpath{cont-dataset-1-param-1-decoding.pdf}}
+    \includegraphics[width=140mm]{\plotpath{cont-dataset-2-param-1-decoding.pdf}}
+    \caption{Local decoding for the two datasets using the parameters fitted by maximum likelihood}
+    \label{fig:decoding}
+\end{figure}
+
+\FloatBarrier
 \pagebreak
 
 \renewcommand\thesection{\Alph{section}}
@@ -121,8 +251,25 @@ All R code created for this assignment is included here. All source code incl. l
 
 \subsection{Function creating model functions}
 \label{app:modelfunction}
-\lstinputlisting{\srcpath{mllk.R}}
+\lstinputlisting[firstline=6,lastline=138]{\srcpath{model.R}}
 
+\subsection{Estimating parameters and decodings}
+\label{app:estimation-decoding}
+\lstinputlisting{\srcpath{calculate-mle.R}}
+
+\FloatBarrier
+\pagebreak
+
+\subsection{Plotting data}
+\label{app:plotdata}
+\lstinputlisting{\srcpath{plotdata.R}}
+
+\subsection{Helper functions}
+\label{app:functions}
+\lstinputlisting{\srcpath{functions.R}}
+
+\FloatBarrier
+\pagebreak
 
 \nocite{zucchini09,waever11}
 \bibliographystyle{plain}
