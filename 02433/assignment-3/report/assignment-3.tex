@@ -1,0 +1,407 @@
+\def\assignmenttitle{Written exercise 3}
+\def\assignmentnumber{3}
+\def\assignmentdate{20-05-2012}
+\def\githuburl{\small\url{https://github.com/alphabits/dtu-spring-2012/tree/master/02433/assignment-3}}
+\def\githuburlfoot{\footnotesize\url{https://github.com/alphabits/dtu-spring-2012/tree/master/02433/assignment-3}}
+
+\input{../../header}
+
+%%% BEGIN DOCUMENT
+\begin{document}
+
+\maketitle
+
+\noindent In this exercise a data set containing 10000 measurements of the power production at the danish wind farm ``Klim'' is analysed. Various time series models are fitted to the first 8000 measurements, and the predictive ability of the models are assessed using the remaining 2000 measurements.
+
+The first 8000 measurements are called the training dataset and the remaining 2000 measurements are the test dataset. The summary output for the training dataset is
+
+\lstinputlisting{\respath{data-summary-training-data.txt}}
+
+And the training dataset is plotted in figure~\ref{fig:training-data-plot}
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=140mm]{\plotpath{training-dataset.pdf}}
+    \caption{Plot of the training dataset showing the power production at the danish wind farm ``Klim''. The measurement at time $t$ is the total power production in the last 5 minutes up to time $t$}
+    \label{fig:training-data-plot}
+\end{figure}
+
+A few things are noticed from the plot. First the minimum production of the wind farm is of cause 0 kW and the maximum production is told to be 21000 kW, and therefore the time series data is bounded. Also it is seen from the plot that the data seems to come from a few different time series with different moments, and that the shifts between the different time series happens over a short time period. As mentioned in the exercise description these shifts is due to changes in the meterological conditions. A natural way to model these shifts in conditions is by fitting a hidden markov model where each state dependent distribution is given by an ARIMA-process. These models are quite complex and before looking at these models a few simpler models are fitted to the data. First the exponential smoothing framework advocated in eg. \cite{hyndman08} is used.
+
+\section*{The Exponential smoothing framework}
+
+Exponential smoothing procedures are procedures that gives point forecasts for time series. In \cite{hyndman08} it is shown how various exponential smoothing procedures are obtained as the one-step prediction in a family of state space models. The R package \myverb{forecast} includes the function \myverb{ets} that given a time series finds the optimal exponential smoothing procedure and estimates the smoothing parameters. By running this function on the training data set the following result is obtained.
+
+\lstinputlisting{\respath{exponential-smoothing.txt}}
+
+The line \myverb{ETS(A,N,N)} means that the best model have additive errors and no trend and seasonal component. The found procedure is therefore the simple exponential smoothing (see eg. \cite{madsen08}). From the result it is seen the smoothing constant is found as $\alpha=0.9999\approx1$. As explained on page 41 in \cite{hyndman08} the found model is given by
+
+\begin{equation*}
+    y_t = y_{t-1} + e_t
+\end{equation*}
+
+where $e_t$ is white noise. Therefore the found model is just the random walk process and the one-step prediction is then given by
+
+\begin{equation*}
+    \widehat{y}_t = y_{t-1}
+\end{equation*}.
+
+The one-step prediction error for the test data set is easily found by
+
+\begin{align*}
+    R &= \sqrt{\frac{1}{T-1}\sum_{t=1}^{T-1}(Y_{t+1} - \widehat{Y}_{t+1})^2} \\
+      &= \sqrt{\frac{1}{T-1}\sum_{t=1}^{T-1}(Y_{t+1} - Y_t)^2}
+\end{align*}
+
+with $T=2000$. In R the one-step prediction error is found as 
+
+\begin{equation*}
+    R_{\text{RandomWalk}}=\input{\respath{prediction-error-random-walk.txt}}
+\end{equation*} 
+
+Using this as our baseline result ARIMA models for the dataset is found next.
+
+
+\section*{Fitting ARIMA models}
+
+In this section ARIMA models for the power production dataset is found. The ACF and PACF for the training dataset are shown in figure~\ref{fig:acf-pacf-training-dataset}. The slow and almost linear decay of the ACF indicates that the time series is nonstationary (page 125 in \cite{cryer08}) and differencing is needed.
+
+\begin{figure}[ht]
+    \centering
+    \mbox{\subfigure{\includegraphics[width=70mm]{\plotpath{acf-training-dataset.pdf}}} \quad 
+          \subfigure{\includegraphics[width=70mm]{\plotpath{pacf-training-dataset.pdf}}}}
+    \caption{ACF and PACF for the training dataset}
+    \label{fig:acf-pacf-training-dataset}
+\end{figure}
+
+The difference of the dataset is calculated and the ACF and PACF for the differenced dataset is shown in figure~\ref{fig:acf-pacf-diffed-data}. Both the ACF and the PACF can be interpreted as damped sine functions and the differenced data should probably be modelled as an ARMA process. After some trial and error an ARMA(1,2) is found to be acceptable.
+
+\begin{figure}[ht]
+    \centering
+    \mbox{\subfigure{\includegraphics[width=70mm]{\plotpath{acf-diffed-data.pdf}}} \quad 
+          \subfigure{\includegraphics[width=70mm]{\plotpath{pacf-diffed-data.pdf}}}}
+    \caption{ACF and PACF for the first difference of the training dataset}
+    \label{fig:acf-pacf-diffed-data}
+\end{figure}
+
+The choice of model is further supported by running the automatic model detection function \myverb{auto.arima} in R. The \myverb{auto.arima} function gives the output
+
+\lstinputlisting{\respath{auto-arima-model.txt}}
+
+which shows an ARIMA(1,1,2) model given by
+
+\begin{equation*}
+    \nabla y_t = 0.80\nabla y_{t-1} - 0.61 e_{t-1} - 0.21 e_{t-2} + e_t
+\end{equation*}
+
+It is worth noticing that R is not including a constant when fitting differenced series. So if the differenced series is drifting the obtained fit is wrong. In the case of the bounded power production dataset this shouldn't be a problem though. See the website \cite{shumway11www} for details.
+
+To check the obtained ARIMA(1,1,2) model the ACF for the standardized residuals is plotted and shown in figure~\ref{fig:acf-and-qq-auto-arima}. There are too many large residuals as well as small intervals with very small residuals. The residuals that neither large nor small do actually resemble white noise. This is confirmed in the QQ-plot of the residuals shown in figure~\ref{fig:acf-and-qq-auto-arima}. Even though the model isn't adequate the one-step prediction error is calculated and gives 
+
+\begin{equation*}
+    R_{\text{ARIMA(1,1,2)}}=\input{\respath{prediction-error-auto-arima.txt}} 
+\end{equation*}
+
+This is a large improvement compared with the random walk model in the previous section.
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=120mm]{\plotpath{rstandard-auto-arima.pdf}}
+    \includegraphics[width=70mm]{\plotpath{qq-plot-auto-arima.pdf}}
+    \caption{ACF for the standardized residuals and a QQ-plot for the fitted ARIMA(1,1,2) model}
+    \label{fig:acf-and-qq-auto-arima}
+\end{figure}
+
+\FloatBarrier
+
+\section*{Fitting HMM models}
+
+From the plot of the residuals for the ARIMA model found in the previous section it is seen that there are many residuals much larger than expected for a well fit model. These large residuals is a result of the varying characteristic of the time series for different meteorological conditions. These different characteristics are naturally modelled by a Hidden Markov Model with each state corresponding to a different characteristic.
+
+Even though the power production measurements are only integers they will be treated as continuous measurements. The state dependent distribution is therefore chosen as a normal distribution. For each state $i=1,2,\dots,m$ we then have
+
+\begin{equation*}
+    Y_t\,|\,C_t=i \:\sim\: N(\mu_i, \sigma_i^2) 
+\end{equation*}
+
+The parameters that need to be estimated are then
+
+\begin{equation*}
+    \myvec{\mu} = \begin{pmatrix}
+        \mu_1 & \mu_2 & \cdots & \mu_m
+    \end{pmatrix} \quad 
+    \myvec{\sigma^2} = \begin{pmatrix}
+        \sigma^2_1 & \sigma^2_2 & \cdots & \sigma^2_m
+    \end{pmatrix} \quad
+    \myvec{\Gamma} = \begin{pmatrix}
+        \gamma_{11} & \cdots & \gamma_{1m} \\
+        \vdots & \ddots & \vdots \\
+        \gamma_{m1} & \cdots & \gamma_{mm}
+    \end{pmatrix}
+\end{equation*}
+
+giving a total of $m(m+1)$ paramters to estimate (since each row in $\myvec{\Gamma}$ sum to 1).
+
+\subsection*{2-state normal HMM}
+
+First a 2-state HMM is fitted to the data by direct maximization of the likelihood function. Due to problems with unbounded liieklihood values, a discrete likelihood value was calculated as
+
+\begin{equation*}
+    p_i(y_t) = \Phi(y_t+0.5; \mu_i, \sigma_i^2) - \Phi(y_t-0.5; \mu_i, \sigma_i^2)
+\end{equation*}
+
+where $\Phi$ is the normal distribution function. The initial values for the parameters was
+
+\begin{equation*}
+    \myvec{\mu_0} = \begin{pmatrix}
+        \input{\respath{2-state-normal-mu-initial}}
+    \end{pmatrix} \quad 
+    \myvec{\sigma^2_0} = \begin{pmatrix}
+        \input{\respath{2-state-normal-sd-initial}}
+    \end{pmatrix} \quad
+    \myvec{\Gamma_0} = \begin{pmatrix}
+        \input{\respath{2-state-normal-gamma-initial}}
+    \end{pmatrix}
+\end{equation*}
+
+which gave the estimates
+
+\begin{equation*}
+    \widehat{\myvec{\mu}} = \begin{pmatrix}
+        \input{\respath{2-state-normal-mu-estimate}}
+    \end{pmatrix} \quad 
+    \myvec{\widehat{\sigma}^2} = \begin{pmatrix}
+        \input{\respath{2-state-normal-sd-estimate}}
+    \end{pmatrix} \quad
+    \widehat{\myvec{\Gamma}} = \begin{pmatrix}
+        \input{\respath{2-state-normal-gamma-estimate}}
+    \end{pmatrix}
+\end{equation*}
+
+Confidence intervals for the estimated parameters can be found in \appref{confidence}. The various model performance measures were 
+
+\begin{equation*}
+    -\ell = \input{\respath{2-state-normal-mllk}} \quad \text{AIC}=\input{\respath{2-state-normal-aic}} \quad \text{BIC}=\input{\respath{2-state-normal-bic}}
+\end{equation*}
+
+To get an idea of the 2 state dependent distributions a plot of them is shown in figure~\ref{fig:2-state-dist-plot}. It is seen how the 2 state dependent distributions cover all possible values and that the variance of the two state distributions are quite similar. Also a non neglectable amount of the probability mass is outside the allowed interval of [0; 21000]. To get an idea of what states the various data points are related to a local decoding was calculated for the training dataset. The decoding is shown in figure~\ref{fig:2-state-decode}
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=100mm]{\plotpath{2-state-normal-dist-plot.pdf}}
+\caption{Plot of state dependent distributions for the 2-state HMM.}
+\label{fig:2-state-dist-plot}
+\end{figure}
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=100mm]{\plotpath{2-state-normal-decoding.pdf}}
+\caption{Local decoding for the 2-state HMM}
+\label{fig:2-state-decode}
+\end{figure}
+
+From the local decoding it seems natural to at least add one ``middle'' state. A 3-state HMM is therefore fitted to the data.
+
+\subsection*{One step prediction errors}
+
+The interesting part of the model checking is to compare the forecast error of the various models. Unfortunately I had major problems with calculating one-step predictions from the HMMs. For some reason all one step prediction distributions turned out to be the same. This would naturally lead to the same one step predictions for all $t$ which wasn't expected. The reason could be that the log of the components of the forward probabilities $\myvec{\alpha}_t$ are numerically so large (-70000 for $t=8000$) for large $t$, that even though the absolute changes between $\myvec{\alpha}_t$ and $\myvec{\alpha}_{t+1}$ are noticeable, the change in 
+
+\begin{equation*}
+    \myvec{\phi}_t = \frac{\myvec{\alpha}_t}{\myvec{\alpha}_t\myvec{1}^{'}}
+\end{equation*}
+
+will be small. Combined with the transition probability matrix $\myvec{\Gamma}$ being close to the identity matrix, makes the one step predictions
+
+\begin{equation*}
+    \text{Pr}(Y_{t+1} = y\,|\, \myvec{Y}^{(t)}=\myvec{x}^{(t)}) = \myvec{\phi}_t\myvec{\Gamma}\myvec{P}(y)\myvec{1}^{'}
+\end{equation*}
+
+almost identical, for all large $t$, if $\myvec{\phi}_t\approx\myvec{\phi}_{t+1}$.
+
+That could explain the constant one step prediction distribution. Another explaination could be that I have made a coding error or have misunderstood something. The bottom line is that one step prediction errors for the HMM models isn't included in this report.
+
+
+\subsection*{3-state normal HMM}
+
+A 3-state HMM is fitted to the training data. The initial values for the parameters are
+
+\begin{equation*}
+    \myvec{\mu_0} = \begin{pmatrix}
+        \input{\respath{3-state-normal-mu-initial}}
+    \end{pmatrix} \quad 
+    \myvec{\sigma^2_0} = \begin{pmatrix}
+        \input{\respath{3-state-normal-sd-initial}}
+    \end{pmatrix} \quad
+    \myvec{\Gamma_0} = \begin{pmatrix}
+        \input{\respath{3-state-normal-gamma-initial}}
+    \end{pmatrix}
+\end{equation*}
+
+Using the initial values gives these estimates (confidence intervals in \appref{confidence}).
+
+\begin{equation*}
+    \widehat{\myvec{\mu}} = \begin{pmatrix}
+        \input{\respath{3-state-normal-mu-estimate}}
+    \end{pmatrix} \quad 
+    \myvec{\widehat{\sigma}^2} = \begin{pmatrix}
+        \input{\respath{3-state-normal-sd-estimate}}
+    \end{pmatrix} \quad
+    \widehat{\myvec{\Gamma}} = \begin{pmatrix}
+        \input{\respath{3-state-normal-gamma-estimate}}
+    \end{pmatrix}
+\end{equation*}
+
+The fitted model now have a state for ``low'', ``medium'' and ``high'' production. The state for high production has a smaller variance than the two other states. It is also seen that shifts directly from low to high or from high to low, is very unlikely to happen ($\gamma_{13}, \gamma_{31} \ll 1$). 
+
+To get an idea of how the state dependent distributions are shaped a plot of the three distributions is shown in figure~\ref{fig:3-state-dist} and a local decoding for the training data is shown in figure~\ref{fig:3-state-decode}
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=100mm]{\plotpath{3-state-normal-dist-plot.pdf}}
+\caption{State dependent distributions for the 3-state HMM}
+\label{fig:3-state-dist}
+\end{figure}
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=100mm]{\plotpath{3-state-normal-decoding.pdf}}
+\caption{Local decoding for the 3-state HMM}
+\label{fig:3-state-decode}
+\end{figure}
+
+Both plots seems to support that 3 states captures the structure in the data better than 2 states. To numerically support that claim, the log likelihood, AIC and BIC are calculated, and gives
+
+\begin{equation*}
+    -\ell = \input{\respath{3-state-normal-mllk}} \quad \text{AIC}=\input{\respath{3-state-normal-aic}} \quad \text{BIC}=\input{\respath{3-state-normal-bic}}
+\end{equation*}
+
+which shows a rather large improvement, compared with the 2-state model. Although the 3-state model seems to fit the data well, the middle state could probably be split into two states and the mean of the lower state be decreased. This leads to a 4-state HMM.
+
+
+\subsection*{4-state normal HMM}
+
+A 4-state HMM is fitted by direct maximization of the likelihood, using initial values given by
+
+\begin{equation*}
+    \myvec{\mu_0} = \begin{pmatrix}
+        \input{\respath{4-state-normal-mu-initial}}
+    \end{pmatrix} \quad 
+    \myvec{\sigma^2_0} = \begin{pmatrix}
+        \input{\respath{4-state-normal-sd-initial}}
+    \end{pmatrix} \quad
+    \myvec{\Gamma_0} = \begin{pmatrix}
+        \input{\respath{4-state-normal-gamma-initial}}
+    \end{pmatrix}
+\end{equation*}
+
+which gives the parameter estimates. In general the variance of the state dependent distribtions are smaller than for the 2- and 3-state models. Also the maximum likelihood procedure seems to agree that the middle state in the 3-state model should be split in two. Like the 2- and 3-state models, the probability of staying in the same state is high and the probability of ``skipping'' a state is much lower than going to a neighbour state.
+
+\begin{equation*}
+    \widehat{\myvec{\mu}} = \begin{pmatrix}
+        \input{\respath{4-state-normal-mu-estimate}}
+    \end{pmatrix} \quad 
+    \myvec{\widehat{\sigma}^2} = \begin{pmatrix}
+        \input{\respath{4-state-normal-sd-estimate}}
+    \end{pmatrix} \quad
+    \widehat{\myvec{\Gamma}} = \begin{pmatrix}
+        \input{\respath{4-state-normal-gamma-estimate}}
+    \end{pmatrix}
+\end{equation*}
+
+The state dependent distributions are plotted in figure~\ref{fig:4-state-dist} and the local decoding of the training data can be seen in figure~\ref{fig:4-state-decode}
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=100mm]{\plotpath{4-state-normal-dist-plot.pdf}}
+\caption{State dependent distributions for the 4-state HMM}
+\label{fig:4-state-dist}
+\end{figure}
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=100mm]{\plotpath{4-state-normal-decoding.pdf}}
+\caption{Local decoding for the 4-state HMM}
+\label{fig:4-state-decode}
+\end{figure}
+
+From the plots, it seems to be the case that the 4-state model further improves the model fit compared with the 3-state model. This is supported by the likelihood value, the AIC and the BIC score
+
+\begin{equation*}
+    -\ell = \input{\respath{4-state-normal-mllk}} \quad \text{AIC}=\input{\respath{4-state-normal-aic}} \quad \text{BIC}=\input{\respath{4-state-normal-bic}}
+\end{equation*}
+
+
+\section*{Conclusion}
+
+I underestimated the amount of work in this exercise. I would also have fitted HMM with AR processes as state dependent processes, but the time ran out. The conclusion is that the best model found is the 4-state HMM with normal distributed state dependent distributions.
+
+
+\FloatBarrier
+\pagebreak
+
+\renewcommand\thesection{\Alph{section}}
+\section{Appendices}
+
+All R code created for this assignment is included here. All source code incl. latex code for this report can be found at \githuburl
+
+\subsection{Confidence intervals for parameter estimates}
+\label{app:confidence}
+
+\begin{table}[htb]
+    \centering
+    \begin{tabular}{lr|rr|r}
+         & \multicolumn{1}{r}{Estimate} & \multicolumn{2}{c}{95\% Conf.Int} & Std.Dev \\\hline
+        \input{\respath{2-state-normal-confidence}} \\
+    \end{tabular}
+    \caption{Parameter estimates with 95\% confidence intervals calculated from the inverse hessian at the maximum}
+    \label{tbl:2-state-parameter-confidence}
+\end{table}
+
+\begin{table}[htb]
+    \centering
+    \begin{tabular}{lr|rr|r}
+         & \multicolumn{1}{r}{Estimate} & \multicolumn{2}{c}{95\% Conf.Int} & Std.Dev \\\hline
+        \input{\respath{3-state-normal-confidence}} \\
+    \end{tabular}
+    \caption{Parameter estimates with 95\% confidence intervals calculated from the inverse hessian at the maximum}
+    \label{tbl:3-state-parameter-confidence}
+\end{table}
+
+\begin{table}[htb]
+    \centering
+    \begin{tabular}{lr|rr|r}
+         & \multicolumn{1}{r}{Estimate} & \multicolumn{2}{c}{95\% Conf.Int} & Std.Dev \\\hline
+        \input{\respath{4-state-normal-confidence}} \\
+    \end{tabular}
+    \caption{Parameter estimates with 95\% confidence intervals calculated from the inverse hessian at the maximum}
+    \label{tbl:4-state-parameter-confidence}
+\end{table}
+
+\FloatBarrier
+
+\subsection{Load data}
+\lstinputlisting{../src/loaddata.R}
+
+\subsection{Data plot}
+\lstinputlisting{../src/eda.R}
+
+\subsection{Exponential smoothing}
+\lstinputlisting{../src/exponential-smoothing.R}
+
+\subsection{ARIMA model fitting}
+\lstinputlisting{../src/arima.R}
+
+\subsection{HMM model function}
+\lstinputlisting{../src/hmm-model.R}
+
+\subsection{HMM model fitting}
+\lstinputlisting{../src/hmm.R}
+
+\FloatBarrier
+\pagebreak
+
+\nocite{zucchini09}
+\bibliographystyle{plain}
+\bibliography{../../../bibliography}
+
+\end{document}

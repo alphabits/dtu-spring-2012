@@ -1,0 +1,15 @@
+ETS(A,N,N) 
+
+Call:
+ ets(y = power.production) 
+
+  Smoothing parameters:
+    alpha = 0.9999 
+
+  Initial states:
+    l = 7598.9915 
+
+  sigma:  900.7497
+
+     AIC     AICc      BIC 
+180753.2 180753.2 180767.2 

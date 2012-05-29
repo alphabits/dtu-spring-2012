@@ -1,0 +1,10 @@
+Series: power.production 
+ARIMA(6,0,0) with non-zero mean 
+
+Coefficients:
+         ar1      ar2     ar3      ar4      ar5     ar6  intercept
+      1.1827  -0.2742  0.0776  -0.0505  -0.0036  0.0577  9614.6258
+s.e.  0.0112   0.0173  0.0176   0.0176   0.0173  0.0112   942.7974
+
+sigma^2 estimated as 768394:  log likelihood=-65561.73
+AIC=131137.5   AICc=131137.5   BIC=131193.4

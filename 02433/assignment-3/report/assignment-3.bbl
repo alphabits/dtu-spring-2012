@@ -1,0 +1,27 @@
+\begin{thebibliography}{1}
+
+\bibitem{cryer08}
+Jonathan~D. Cryer and Kung-Sik Chan.
+\newblock {\em Time Series Analysis with Applications in R}.
+\newblock Springer Science+Business Media, 2nd edition, 2008.
+
+\bibitem{hyndman08}
+Rob Hyndman, Anne Koehler, Keith Ord, and Ralph Snyder.
+\newblock {\em Forecasting with Exponential Smoothing}.
+\newblock Springer Berlin, 1st edition, 2008.
+
+\bibitem{madsen08}
+Henrik Madsen.
+\newblock {\em Time Series Analysis}.
+\newblock Chapman \& Hall/CRC, 1st edition, 2008.
+
+\bibitem{shumway11www}
+Robert~H. Shumway and David~S. Stoffer.
+\newblock \url{http://www.stat.pitt.edu/stoffer/tsa3/Rissues.htm}, 2011.
+
+\bibitem{zucchini09}
+Walter Zucchini and Iain~L. MacDonald.
+\newblock {\em Hidden Markov Models for Time Series}.
+\newblock Chapman \& Hall/CRC, 1st edition, 2009.
+
+\end{thebibliography}

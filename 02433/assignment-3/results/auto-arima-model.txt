@@ -1,0 +1,10 @@
+Series: power.production 
+ARIMA(1,1,2)                    
+
+Coefficients:
+         ar1      ma1      ma2
+      0.7957  -0.6087  -0.2128
+s.e.  0.0402   0.0403   0.0111
+
+sigma^2 estimated as 775023:  log likelihood=-65585.94
+AIC=131179.9   AICc=131179.9   BIC=131207.8
