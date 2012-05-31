@@ -1,0 +1,40 @@
+\documentclass[mathserif]{beamer}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{array}
+\usepackage{amsmath,amssymb,latexsym,epic,eepic,epsfig,graphics,psfrag}
+\usepackage{amsfonts,amsbsy}
+\usepackage{subfigure}
+\definecolor{mygray}{RGB}{244,244,244}
+\usepackage[scaled]{beramono}
+\usepackage{listings}
+\lstset {                 % A rudimentary config that shows off some features.
+    language=R,
+    basicstyle=\scriptsize\ttfamily, % Without beramono, we'd get cmtt, the teletype font.
+    commentstyle=\textit, % cmtt doesn't do italics. It might do slanted text though.
+    keywordstyle=,
+    identifierstyle=,
+    aboveskip=12pt,
+    abovecaptionskip=6pt,
+    framextopmargin=4pt,
+    framexbottommargin=4pt,
+    framexleftmargin=4pt,
+    framexrightmargin=4pt,
+    xleftmargin=4pt,
+    xrightmargin=4pt,
+    backgroundcolor=\color{mygray},
+    frame=single,
+    showstringspaces=false,
+    captionpos=b,
+    tabsize=4            % Or whatever you use in your editor, I suppose.
+}
+\newcommand\myvec[1]{\boldsymbol{#1}}
+\newcommand\myverb[1]{{\footnotesize\texttt{#1}}}
+\newcommand\Corr[1]{\textrm{Corr}[#1]}
+\newcommand\given{\,|\,}
+\newcommand\respath[1]{../results/#1}
+\usefonttheme{structurebold}
+\usetheme{Copenhagen}
+\author{Anders Hørsted -- s082382}
+\institute{02433 Hidden Markov Models}
+\date{May 31th 2012}
